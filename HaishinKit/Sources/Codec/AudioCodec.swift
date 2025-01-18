@@ -6,8 +6,6 @@ import AVFoundation
  * - seealso: https://developer.apple.com/library/ios/technotes/tn2236/_index.html
  */
 final class AudioCodec {
-    static let frameCamacity: UInt32 = 1024
-
     /// Specifies the settings for audio codec.
     var settings: AudioCodecSettings = .default {
         didSet {
@@ -44,6 +42,7 @@ final class AudioCodec {
         }
     }
     private var cursor: Int = 0
+    private var ringBuffer: AudioRingBuffer?
     private var inputBuffers: [AVAudioBuffer] = []
     private var continuation: AsyncStream<(AVAudioBuffer, AVAudioTime)>.Continuation? {
         didSet {
@@ -92,12 +91,16 @@ final class AudioCodec {
         }
         var error: NSError?
         let outputBuffer = self.outputBuffer
-        let outputStatus = audioConverter.convert(to: outputBuffer, error: &error) { _, inputStatus in
+        if let audioBuffer = audioBuffer as? AVAudioPCMBuffer {
+            ringBuffer?.append(audioBuffer, when: when)
+        }
+        let outputStatus = audioConverter.convert(to: outputBuffer, error: &error) { packetCount, inputStatus in
             switch self.inputBuffer {
             case let inputBuffer as AVAudioCompressedBuffer:
                 inputBuffer.copy(audioBuffer)
             case let inputBuffer as AVAudioPCMBuffer:
-                if !inputBuffer.copy(audioBuffer) {
+                let status = self.ringBuffer?.render(packetCount, ioData: inputBuffer.mutableAudioBufferList)
+                if status != noErr {
                     inputBuffer.muted(true)
                 }
             default:
@@ -126,8 +129,9 @@ final class AudioCodec {
         }
         switch inputFormat.formatDescription.mediaSubType {
         case .linearPCM:
-            let buffer = AVAudioPCMBuffer(pcmFormat: inputFormat, frameCapacity: Self.frameCamacity)
-            buffer?.frameLength = Self.frameCamacity
+            let frameCapacity = settings.format.makeFramesPerPacket(inputFormat.sampleRate)
+            let buffer = AVAudioPCMBuffer(pcmFormat: inputFormat, frameCapacity: frameCapacity)
+            buffer?.frameLength = frameCapacity
             return buffer
         default:
             return AVAudioCompressedBuffer(format: inputFormat, packetCapacity: 1, maximumPacketSize: 1024)
@@ -145,6 +149,9 @@ final class AudioCodec {
         }
         let converter = AVAudioConverter(from: inputFormat, to: outputFormat)
         settings.apply(converter, oldValue: nil)
+        if inputFormat.formatDescription.mediaSubType == .linearPCM {
+            ringBuffer = AudioRingBuffer(inputFormat)
+        }
         return converter
     }
 }
