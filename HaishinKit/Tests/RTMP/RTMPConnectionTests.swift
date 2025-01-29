@@ -1,7 +1,7 @@
 import Foundation
 import Testing
 
-@testable import HaishinKit
+@testable import HaishinKitCitizen
 
 @Suite struct RTMPConnectionTests {
     /*

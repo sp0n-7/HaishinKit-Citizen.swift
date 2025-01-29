@@ -3,7 +3,7 @@ import CoreMedia
 import Foundation
 import Testing
 
-@testable import HaishinKit
+@testable import HaishinKitCitizen
 
 /*
  final class IOStreamRecorderTests: XCTestCase, IOStreamRecorderDelegate {

@@ -1,4 +1,4 @@
-import HaishinKit
+import HaishinKit194
 import SwiftUI
 
 struct PiPHKSwiftUiView: UIViewRepresentable {

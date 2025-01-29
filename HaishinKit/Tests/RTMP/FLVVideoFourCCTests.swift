@@ -2,13 +2,13 @@ import AVFoundation
 import Foundation
 import Testing
 
-@testable import HaishinKit
+@testable import HaishinKitCitizen
 
 @Suite struct FLVVideoFourCCTests {
     @Test func main() {
-        #expect("av01" == str4(n: Int(RTMPVideoFourCC.av1.rawValue)))
-        #expect("hvc1" == str4(n: Int(RTMPVideoFourCC.hevc.rawValue)))
-        #expect("vp09" == str4(n: Int(RTMPVideoFourCC.vp9.rawValue)))
+        #expect("av01" == str4(n: Int(FLVVideoFourCC.av1.rawValue)))
+        #expect("hvc1" == str4(n: Int(FLVVideoFourCC.hevc.rawValue)))
+        #expect("vp09" == str4(n: Int(FLVVideoFourCC.vp9.rawValue)))
     }
 
     func str4(n: Int) -> String {

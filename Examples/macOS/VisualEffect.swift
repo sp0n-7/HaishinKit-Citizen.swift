@@ -1,7 +1,7 @@
 import AVFoundation
 import CoreImage
 import Foundation
-import HaishinKit
+import HaishinKit194
 
 final class MonochromeEffect: VideoEffect {
     let filter: CIFilter? = CIFilter(name: "CIColorMonochrome")

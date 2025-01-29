@@ -1,7 +1,7 @@
 import Foundation
 import Testing
 
-@testable import HaishinKit
+@testable import HaishinKitCitizen
 
 @Suite struct MD5Tests {
     func hex(_ data: Data) -> String {

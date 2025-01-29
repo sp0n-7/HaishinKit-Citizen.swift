@@ -1,7 +1,7 @@
 @preconcurrency import AVFoundation
 import Combine
 import Foundation
-import HaishinKit
+import HaishinKitCitizen
 import libsrt
 
 /// An actor that provides the interface to control a one-way channel over a SRTConnection.

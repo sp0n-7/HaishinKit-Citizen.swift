@@ -3,7 +3,7 @@ import Foundation
 import Logboard
 import Testing
 
-@testable import HaishinKit
+@testable import HaishinKitCitizen
 
 /*
 

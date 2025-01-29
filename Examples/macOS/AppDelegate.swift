@@ -1,5 +1,5 @@
 import Cocoa
-import HaishinKit
+import HaishinKit194
 import Logboard
 
 let logger = LBLogger.with("com.haishinkit.Exsample.macOS")
@@ -9,6 +9,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     var window: NSWindow!
 
     func applicationDidFinishLaunching(_ aNotification: Notification) {
-        LBLogger.with(kHaishinKitIdentifier).level = .info
+        LBLogger.with(kHaishinKit194Identifier).level = .info
     }
 }

@@ -1,5 +1,5 @@
 import AVFoundation
-import HaishinKit
+import HaishinKit194
 @preconcurrency import Logboard
 import UIKit
 

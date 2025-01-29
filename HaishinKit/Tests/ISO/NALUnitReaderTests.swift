@@ -2,7 +2,7 @@ import CoreMedia
 import Foundation
 import Testing
 
-@testable import HaishinKit
+@testable import HaishinKitCitizen
 
 @Suite struct NALUnitReaderTests {
     @Test func main() {

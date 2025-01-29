@@ -363,11 +363,7 @@ struct RTMPSharedObjectMessage: RTMPMessage {
  7.1.5. Audio Message (9)
  */
 struct RTMPAudioMessage: RTMPMessage {
-    static let AAC_HEADER: UInt8 =
-        RTMPAudioCodec.aac.rawValue << 4 |
-        RTMPSoundRate.kHz44.rawValue << 2 |
-        RTMPSoundSize.snd16bit.rawValue << 1 |
-        RTMPSoundType.stereo.rawValue
+    static let aac: UInt8 = FLVAudioCodec.aac.rawValue << 4 | FLVSoundRate.kHz44.rawValue << 2 | FLVSoundSize.snd16bit.rawValue << 1 | FLVSoundType.stereo.rawValue
 
     // MARK: RTMPMessage
     let type: RTMPMessageType = .audio
@@ -376,8 +372,8 @@ struct RTMPAudioMessage: RTMPMessage {
     let payload: Data
 
     // MARK: RTMPAudioMessage
-    var codec: RTMPAudioCodec {
-        return payload.isEmpty ? .unknown : RTMPAudioCodec(rawValue: payload[0] >> 4) ?? .unknown
+    var codec: FLVAudioCodec {
+        return payload.isEmpty ? .unknown : FLVAudioCodec(rawValue: payload[0] >> 4) ?? .unknown
     }
 
     init(_ header: RTMPChunkMessageHeader) {
@@ -392,7 +388,7 @@ struct RTMPAudioMessage: RTMPMessage {
         }
         self.streamId = streamId
         self.timestamp = timestamp
-        var buffer = Data([Self.AAC_HEADER, RTMPAACPacketType.seq.rawValue])
+        var buffer = Data([Self.aac, FLVAACPacketType.seq.rawValue])
         buffer.append(contentsOf: config.bytes)
         self.payload = buffer
     }
@@ -403,7 +399,7 @@ struct RTMPAudioMessage: RTMPMessage {
         }
         self.streamId = streamId
         self.timestamp = timestamp
-        var buffer = Data([Self.AAC_HEADER, RTMPAACPacketType.raw.rawValue])
+        var buffer = Data([Self.aac, FLVAACPacketType.raw.rawValue])
         buffer.append(audioBuffer.data.assumingMemoryBound(to: UInt8.self), count: Int(audioBuffer.byteLength))
         self.payload = buffer
     }
@@ -423,10 +419,10 @@ struct RTMPAudioMessage: RTMPMessage {
 
     func makeAudioFormat() -> AVAudioFormat? {
         switch payload[1] {
-        case RTMPAACPacketType.seq.rawValue:
+        case FLVAACPacketType.seq.rawValue:
             let config = AudioSpecificConfig(bytes: [UInt8](payload[codec.headerSize..<payload.count]))
             return config?.makeAudioFormat()
-        case RTMPAACPacketType.raw.rawValue:
+        case FLVAACPacketType.raw.rawValue:
             guard var audioStreamBasicDescription = codec.audioStreamBasicDescription(payload) else {
                 return nil
             }
@@ -460,7 +456,7 @@ struct RTMPVideoMessage: RTMPMessage {
     var isSupported: Bool {
         return isExHeader ?
             payload[1] == 0x68 && payload[2] == 0x76 && payload[3] == 0x63 && payload[4] == 0x31 :
-            payload[0] & 0b01110000 >> 4 == RTMPVideoCodec.avc.rawValue
+            payload[0] & 0b01110000 >> 4 == FLVVideoCodec.avc.rawValue
     }
 
     var compositionTime: Int32 {
@@ -472,7 +468,7 @@ struct RTMPVideoMessage: RTMPMessage {
     }
 
     private var offset: Int {
-        return isExHeader ? packetType == RTMPVideoPacketType.codedFrames.rawValue ? 3 : 0 : 0
+        return isExHeader ? packetType == FLVVideoPacketType.codedFrames.rawValue ? 3 : 0 : 0
     }
 
     init(_ header: RTMPChunkMessageHeader) {
@@ -492,14 +488,14 @@ struct RTMPVideoMessage: RTMPMessage {
             guard let configurationBox = formatDescription.configurationBox else {
                 return nil
             }
-            var buffer = Data([RTMPFrameType.key.rawValue << 4 | RTMPVideoCodec.avc.rawValue, RTMPAVCPacketType.seq.rawValue, 0, 0, 0])
+            var buffer = Data([FLVFrameType.key.rawValue << 4 | FLVVideoCodec.avc.rawValue, FLVAVCPacketType.seq.rawValue, 0, 0, 0])
             buffer.append(configurationBox)
             payload = buffer
         case .hevc:
             guard let configurationBox = formatDescription.configurationBox else {
                 return nil
             }
-            var buffer = Data([0b10000000 | RTMPFrameType.key.rawValue << 4 | RTMPVideoPacketType.sequenceStart.rawValue, 0x68, 0x76, 0x63, 0x31])
+            var buffer = Data([0b10000000 | FLVFrameType.key.rawValue << 4 | FLVVideoPacketType.sequenceStart.rawValue, 0x68, 0x76, 0x63, 0x31])
             buffer.append(configurationBox)
             payload = buffer
         default:
@@ -516,12 +512,12 @@ struct RTMPVideoMessage: RTMPMessage {
         let keyframe = !sampleBuffer.isNotSync
         switch sampleBuffer.formatDescription?.mediaSubType {
         case .h264?:
-            var buffer = Data([((keyframe ? RTMPFrameType.key.rawValue : RTMPFrameType.inter.rawValue) << 4) | RTMPVideoCodec.avc.rawValue, RTMPAVCPacketType.nal.rawValue])
+            var buffer = Data([((keyframe ? FLVFrameType.key.rawValue : FLVFrameType.inter.rawValue) << 4) | FLVVideoCodec.avc.rawValue, FLVAVCPacketType.nal.rawValue])
             buffer.append(contentsOf: compositionTime.bigEndian.data[1..<4])
             buffer.append(data)
             payload = buffer
         case .hevc?:
-            var buffer = Data([0b10000000 | ((keyframe ? RTMPFrameType.key.rawValue : RTMPFrameType.inter.rawValue) << 4) | RTMPVideoPacketType.codedFrames.rawValue, 0x68, 0x76, 0x63, 0x31])
+            var buffer = Data([0b10000000 | ((keyframe ? FLVFrameType.key.rawValue : FLVFrameType.inter.rawValue) << 4) | FLVVideoPacketType.codedFrames.rawValue, 0x68, 0x76, 0x63, 0x31])
             buffer.append(contentsOf: compositionTime.bigEndian.data[1..<4])
             buffer.append(data)
             payload = buffer
@@ -532,7 +528,7 @@ struct RTMPVideoMessage: RTMPMessage {
 
     func makeSampleBuffer(_ presentationTimeStamp: CMTime, formatDesciption: CMFormatDescription?) -> CMSampleBuffer? {
         var sampleBuffer: CMSampleBuffer?
-        let blockBuffer = payload.makeBlockBuffer(advancedBy: RTMPTagType.video.headerSize + offset)
+        let blockBuffer = payload.makeBlockBuffer(advancedBy: FLVTagType.video.headerSize + offset)
         var sampleSize = blockBuffer?.dataLength ?? 0
         var timing = CMSampleTimingInfo(
             duration: .invalid,
@@ -554,7 +550,7 @@ struct RTMPVideoMessage: RTMPMessage {
                 sampleBufferOut: &sampleBuffer) == noErr else {
             return nil
         }
-        sampleBuffer?.isNotSync = !(payload[0] >> 4 & 0b0111 == RTMPFrameType.key.rawValue)
+        sampleBuffer?.isNotSync = !(payload[0] >> 4 & 0b0111 == FLVFrameType.key.rawValue)
         return sampleBuffer
     }
 
@@ -563,13 +559,13 @@ struct RTMPVideoMessage: RTMPMessage {
             // hevc
             if payload[1] == 0x68 && payload[2] == 0x76 && payload[3] == 0x63 && payload[4] == 0x31 {
                 var config = HEVCDecoderConfigurationRecord()
-                config.data = payload.subdata(in: RTMPTagType.video.headerSize..<payload.count)
+                config.data = payload.subdata(in: FLVTagType.video.headerSize..<payload.count)
                 return config.makeFormatDescription()
             }
         } else {
-            if payload[0] & 0b01110000 >> 4 == RTMPVideoCodec.avc.rawValue {
+            if payload[0] & 0b01110000 >> 4 == FLVVideoCodec.avc.rawValue {
                 var config = AVCDecoderConfigurationRecord()
-                config.data = payload.subdata(in: RTMPTagType.video.headerSize..<payload.count)
+                config.data = payload.subdata(in: FLVTagType.video.headerSize..<payload.count)
                 return config.makeFormatDescription()
             }
         }

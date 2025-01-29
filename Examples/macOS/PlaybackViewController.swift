@@ -1,7 +1,7 @@
 import AppKit
 import AVFoundation
 import Foundation
-import HaishinKit
+import HaishinKit194
 
 final class PlaybackViewController: NSViewController {
     @IBOutlet private weak var lfView: MTHKView!

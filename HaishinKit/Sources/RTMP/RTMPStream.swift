@@ -631,9 +631,9 @@ public actor RTMPStream {
             return
         }
         switch message.payload[1] {
-        case RTMPAACPacketType.seq.rawValue:
+        case FLVAACPacketType.seq.rawValue:
             audioFormat = message.makeAudioFormat()
-        case RTMPAACPacketType.raw.rawValue:
+        case FLVAACPacketType.raw.rawValue:
             if audioFormat == nil {
                 audioFormat = message.makeAudioFormat()
             }
@@ -648,26 +648,26 @@ public actor RTMPStream {
 
     private func append(_ message: RTMPVideoMessage, type: RTMPChunkType) {
         videoTimestamp.update(message, chunkType: type)
-        guard RTMPTagType.video.headerSize <= message.payload.count && message.isSupported else {
+        guard FLVTagType.video.headerSize <= message.payload.count && message.isSupported else {
             return
         }
         if message.isExHeader {
             // IsExHeader for Enhancing RTMP, FLV
             switch message.packetType {
-            case RTMPVideoPacketType.sequenceStart.rawValue:
+            case FLVVideoPacketType.sequenceStart.rawValue:
                 videoFormat = message.makeFormatDescription()
-            case RTMPVideoPacketType.codedFrames.rawValue:
+            case FLVVideoPacketType.codedFrames.rawValue:
                 Task { await incoming.append(message, presentationTimeStamp: videoTimestamp.value, formatDesciption: videoFormat) }
-            case RTMPVideoPacketType.codedFramesX.rawValue:
+            case FLVVideoPacketType.codedFramesX.rawValue:
                 Task { await incoming.append(message, presentationTimeStamp: videoTimestamp.value, formatDesciption: videoFormat) }
             default:
                 break
             }
         } else {
             switch message.packetType {
-            case RTMPAVCPacketType.seq.rawValue:
+            case FLVAVCPacketType.seq.rawValue:
                 videoFormat = message.makeFormatDescription()
-            case RTMPAVCPacketType.nal.rawValue:
+            case FLVAVCPacketType.nal.rawValue:
                 Task { await incoming.append(message, presentationTimeStamp: videoTimestamp.value, formatDesciption: videoFormat) }
             default:
                 break
@@ -688,14 +688,14 @@ public actor RTMPStream {
             #endif
             switch outgoing.videoSettings.format {
             case .h264:
-                metadata["videocodecid"] = RTMPVideoCodec.avc.rawValue
+                metadata["videocodecid"] = FLVVideoCodec.avc.rawValue
             case .hevc:
-                metadata["videocodecid"] = RTMPVideoFourCC.hevc.rawValue
+                metadata["videocodecid"] = FLVVideoFourCC.hevc.rawValue
             }
             metadata["videodatarate"] = outgoing.videoSettings.bitRate / 1000
         }
         if let audioFormat = outgoing.audioInputFormat?.audioStreamBasicDescription {
-            metadata["audiocodecid"] = RTMPAudioCodec.aac.rawValue
+            metadata["audiocodecid"] = FLVAudioCodec.aac.rawValue
             metadata["audiodatarate"] = outgoing.audioSettings.bitRate / 1000
             metadata["audiosamplerate"] = audioFormat.mSampleRate
         }

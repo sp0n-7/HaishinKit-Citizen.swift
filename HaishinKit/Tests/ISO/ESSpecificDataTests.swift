@@ -2,7 +2,7 @@ import CoreMedia
 import Foundation
 import Testing
 
-@testable import HaishinKit
+@testable import HaishinKitCitizen
 
 @Suite struct ESSpecificDataTests {
     private let aacData = Data([15, 225, 1, 240, 6, 10, 4, 117, 110, 100, 0])

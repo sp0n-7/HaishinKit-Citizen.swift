@@ -1,7 +1,7 @@
 import AppKit
 import Foundation
-@testable import HaishinKit
-import MoQTHaishinKit
+@testable import HaishinKit194
+import MoQTHaishinKit194
 
 final class FLVAnalyzerViewController: NSViewController {
     @IBOutlet private weak var textView: NSTextView!

@@ -1,5 +1,5 @@
 import Foundation
-@testable import MoQTHaishinKit
+@testable import MoQTHaishinKitCitizen
 import Testing
 
 @Suite struct MoQTStreamHeaderSubgroupTests {
