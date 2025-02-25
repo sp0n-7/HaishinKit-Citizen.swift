@@ -1,6 +1,6 @@
 import Combine
 import Foundation
-import HaishinKit
+import HaishinKitCitizen
 import libsrt
 
 /// An actor that provides the interface to control a two-way SRT connection.

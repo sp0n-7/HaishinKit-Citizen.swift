@@ -1,7 +1,7 @@
 import Foundation
 import Testing
 
-@testable import HaishinKit
+@testable import HaishinKitCitizen
 
 @Suite struct CRC32Tests {
     static let tableOfMpeg2: [UInt32] = [

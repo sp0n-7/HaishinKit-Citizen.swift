@@ -14,7 +14,7 @@ let swiftSettings: [SwiftSetting] = [
 #endif
 
 let package = Package(
-    name: "HaishinKit",
+    name: "HaishinKitCitizen",
     platforms: [
         .iOS(.v13),
         .tvOS(.v13),
@@ -23,9 +23,9 @@ let package = Package(
         .macCatalyst(.v14)
     ],
     products: [
-        .library(name: "HaishinKit", targets: ["HaishinKit"]),
-        .library(name: "SRTHaishinKit", targets: ["SRTHaishinKit"]),
-        .library(name: "MoQTHaishinKit", targets: ["MoQTHaishinKit"])
+        .library(name: "HaishinKitCitizen", targets: ["HaishinKitCitizen"]),
+        .library(name: "SRTHaishinKitCitizen", targets: ["SRTHaishinKitCitizen"]),
+        .library(name: "MoQTHaishinKitCitizen", targets: ["MoQTHaishinKitCitizen"])
     ],
     dependencies: [
         .package(url: "https://github.com/apple/swift-docc-plugin", from: "1.4.3"),
@@ -37,26 +37,26 @@ let package = Package(
             path: "SRTHaishinKit/Vendor/SRT/libsrt.xcframework"
         ),
         .target(
-            name: "HaishinKit",
+            name: "HaishinKitCitizen",
             dependencies: ["Logboard"],
             path: "HaishinKit/Sources",
             swiftSettings: swiftSettings
         ),
         .target(
-            name: "SRTHaishinKit",
-            dependencies: ["libsrt", "HaishinKit"],
+            name: "SRTHaishinKitCitizen",
+            dependencies: ["libsrt", "HaishinKitCitizen"],
             path: "SRTHaishinKit/Sources",
             swiftSettings: swiftSettings
         ),
         .target(
-            name: "MoQTHaishinKit",
-            dependencies: ["HaishinKit"],
+            name: "MoQTHaishinKitCitizen",
+            dependencies: ["HaishinKitCitizen"],
             path: "MoQTHaishinKit/Sources",
             swiftSettings: swiftSettings
         ),
         .testTarget(
-            name: "HaishinKitTests",
-            dependencies: ["HaishinKit"],
+            name: "HaishinKitTestsCitizen",
+            dependencies: ["HaishinKitCitizen"],
             path: "HaishinKit/Tests",
             resources: [
                 .process("Asset")
@@ -64,8 +64,8 @@ let package = Package(
             swiftSettings: swiftSettings
         ),
         .testTarget(
-            name: "SRTHaishinKitTests",
-            dependencies: ["SRTHaishinKit"],
+            name: "SRTHaishinKitTestsCitizen",
+            dependencies: ["SRTHaishinKitCitizen"],
             path: "SRTHaishinKit/Tests",
             swiftSettings: swiftSettings
         )

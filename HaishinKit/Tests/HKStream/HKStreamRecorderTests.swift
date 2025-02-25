@@ -1,7 +1,7 @@
 import Foundation
 import Testing
 
-@testable import HaishinKit
+@testable import HaishinKitCitizen
 
 @Suite struct HKStreamRecorderTests {
     @Test func startRunning_nil() async throws {

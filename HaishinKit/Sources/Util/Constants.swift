@@ -1,4 +1,4 @@
 import Logboard
 
-public let kHaishinKitIdentifier = "com.haishinkit.HaishinKit"
-nonisolated(unsafe) let logger = LBLogger.with(kHaishinKitIdentifier)
+public let kHaishinKitCitizenIdentifier = "com.haishinkit.HaishinKitCitizen"
+nonisolated(unsafe) let logger = LBLogger.with(kHaishinKitCitizenIdentifier)
