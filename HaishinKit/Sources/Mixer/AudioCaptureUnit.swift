@@ -61,16 +61,42 @@ final class AudioCaptureUnit: CaptureUnit {
     #if os(iOS) || os(macOS) || os(tvOS)
     @available(tvOS 17.0, *)
     func attachAudio(_ track: UInt8, device: AVCaptureDevice?, configuration: AudioDeviceConfigurationBlock?) throws {
+        let startTime = CFAbsoluteTimeGetCurrent()
+        print("HaishinKit: AudioCaptureUnit.attachAudio started at \(startTime) for track \(track)")
+        
         try session.configuration { _ in
+            let configStartTime = CFAbsoluteTimeGetCurrent()
+            print("HaishinKit: AudioCaptureUnit.attachAudio session configuration started at \(configStartTime), elapsed: \(configStartTime - startTime)")
+            
             for capture in devices.values where capture.device == device {
+                let detachStartTime = CFAbsoluteTimeGetCurrent()
+                print("HaishinKit: AudioCaptureUnit detaching existing device at \(detachStartTime), elapsed: \(detachStartTime - startTime)")
                 try? capture.attachDevice(nil, session: session, audioUnit: self)
+                print("HaishinKit: AudioCaptureUnit detach completed at \(CFAbsoluteTimeGetCurrent()), took: \(CFAbsoluteTimeGetCurrent() - detachStartTime)")
             }
+            
+            let deviceLookupTime = CFAbsoluteTimeGetCurrent()
+            print("HaishinKit: AudioCaptureUnit getting device for track \(track) at \(deviceLookupTime), elapsed: \(deviceLookupTime - startTime)")
+            
             guard let capture = self.device(for: track) else {
+                print("HaishinKit: AudioCaptureUnit no device found for track \(track) at \(CFAbsoluteTimeGetCurrent())")
                 return
             }
+            
+            let configureTime = CFAbsoluteTimeGetCurrent()
+            print("HaishinKit: AudioCaptureUnit configuring device at \(configureTime), elapsed: \(configureTime - startTime)")
             try? configuration?(capture)
+            
+            let attachStartTime = CFAbsoluteTimeGetCurrent()
+            print("HaishinKit: AudioCaptureUnit attaching device at \(attachStartTime), elapsed: \(attachStartTime - startTime)")
             try capture.attachDevice(device, session: session, audioUnit: self)
+            
+            let attachEndTime = CFAbsoluteTimeGetCurrent()
+            print("HaishinKit: AudioCaptureUnit device attached at \(attachEndTime), elapsed: \(attachEndTime - startTime), attachment took: \(attachEndTime - attachStartTime)")
         }
+        
+        let endTime = CFAbsoluteTimeGetCurrent()
+        print("HaishinKit: AudioCaptureUnit.attachAudio completed at \(endTime), total time: \(endTime - startTime)")
     }
 
     @available(tvOS 17.0, *)
@@ -80,17 +106,26 @@ final class AudioCaptureUnit: CaptureUnit {
 
     @available(tvOS 17.0, *)
     private func device(for track: UInt8) -> AudioDeviceUnit? {
+        let startTime = CFAbsoluteTimeGetCurrent()
+        print("HaishinKit: AudioCaptureUnit.device(for:) started at \(startTime) for track \(track)")
+        
         #if os(tvOS)
         if _devices[track] == nil {
+            print("HaishinKit: AudioCaptureUnit creating new device for track \(track)")
             _devices[track] = .init(track)
         }
-        return _devices[track] as? AudioDeviceUnit
+        let result = _devices[track] as? AudioDeviceUnit
         #else
         if devices[track] == nil {
+            print("HaishinKit: AudioCaptureUnit creating new device for track \(track)")
             devices[track] = .init(track)
         }
-        return devices[track]
+        let result = devices[track]
         #endif
+        
+        let endTime = CFAbsoluteTimeGetCurrent()
+        print("HaishinKit: AudioCaptureUnit.device(for:) completed at \(endTime), took: \(endTime - startTime)")
+        return result
     }
     #endif
 
