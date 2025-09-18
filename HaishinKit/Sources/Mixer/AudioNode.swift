@@ -135,8 +135,16 @@ final class MixerNode: AudioNode {
         componentFlagsMask: 0)
 
     init(format: AVAudioFormat) throws {
-        var desc = mixerComponentDescription
-        try super.init(description: &desc)
+        var mixerDefaultDesc = AudioComponentDescription(
+            componentType: kAudioUnitType_Mixer,
+            componentSubType: kAudioUnitSubType_MultiChannelMixer,
+            componentManufacturer: kAudioUnitManufacturer_Apple,
+            componentFlags: 0,
+            componentFlagsMask: 0)
+
+        try super.init(description: &mixerDefaultDesc)
+
+        self.mixerComponentDescription = mixerDefaultDesc
     }
 
     func update(inputCallback: inout AURenderCallbackStruct, bus: UInt8) throws {
@@ -233,15 +241,16 @@ final class OutputNode: AudioNode {
         }
         self.buffer = buffer
 
-        // Create a local copy to avoid CopyPropagation issues during archiving
-        var description = AudioComponentDescription(
+        var outputDefaultDesc = AudioComponentDescription(
             componentType: kAudioUnitType_Output,
             componentSubType: kAudioUnitSubType_GenericOutput,
             componentManufacturer: kAudioUnitManufacturer_Apple,
             componentFlags: 0,
             componentFlagsMask: 0)
 
-        try super.init(description: &description)
+        try super.init(description: &outputDefaultDesc)
+
+        self.outputComponentDescription = outputDefaultDesc
     }
 
     func render(numberOfFrames: AVAudioFrameCount,
