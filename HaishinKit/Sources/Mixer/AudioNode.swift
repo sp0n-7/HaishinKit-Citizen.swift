@@ -134,6 +134,8 @@ final class MixerNode: AudioNode {
         componentFlags: 0,
         componentFlagsMask: 0)
 
+    @_optimize(none)
+    @inline(never)
     init(format: AVAudioFormat) throws {
         try super.init(description: &mixerComponentDescription)
     }
