@@ -232,7 +232,16 @@ final class OutputNode: AudioNode {
             throw Error.unableToAllocateBuffer
         }
         self.buffer = buffer
-        try super.init(description: &outputComponentDescription)
+
+        // Create a local copy to avoid CopyPropagation issues during archiving
+        var description = AudioComponentDescription(
+            componentType: kAudioUnitType_Output,
+            componentSubType: kAudioUnitSubType_GenericOutput,
+            componentManufacturer: kAudioUnitManufacturer_Apple,
+            componentFlags: 0,
+            componentFlagsMask: 0)
+
+        try super.init(description: &description)
     }
 
     func render(numberOfFrames: AVAudioFrameCount,
