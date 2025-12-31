@@ -1,6 +1,10 @@
 @preconcurrency import AVFoundation
 import Combine
 
+#if canImport(AVFAudio)
+import AVFAudio
+#endif
+
 #if canImport(UIKit)
 import UIKit
 #endif
@@ -105,6 +109,9 @@ public final actor MediaMixer {
     private lazy var session = CaptureSession()
     @ScreenActor
     private lazy var displayLink = DisplayLinkChoreographer()
+    // Retry tracking for runtime errors
+    private var runtimeErrorRetryCount: [String: Int] = [:]
+    private var runtimeErrorLastRetryTime: [String: Date] = [:]
 
     #if os(iOS) || os(tvOS)
     /// Creates a new instance.
@@ -421,8 +428,177 @@ public final actor MediaMixer {
             }
         #endif
         default:
-            break
+            // Check for priority error (device in use by another process, e.g., phone call)
+            // Use AVAudioSession.ErrorCode for robust error detection instead of raw codes
+            #if os(iOS) || os(tvOS) || os(macOS) || os(visionOS)
+            let nsError = error._nsError as NSError
+            let underlying = nsError.userInfo[NSUnderlyingErrorKey] as? NSError
+            
+            if let underlying = underlying,
+               underlying.domain == NSOSStatusErrorDomain,
+               let audioCode = AVAudioSession.ErrorCode(rawValue: underlying.code) {
+                switch audioCode {
+                case .cannotInterruptOthers:
+                    // '!int' (560557684) — e.g. phone call / foreground audio you can't interrupt
+                    logger.warn("MediaMixer: audio session error - cannot interrupt others (phone call/foreground audio)")
+                    await handlePriorityError(error)
+                case .insufficientPriority:
+                    // '!pri' (561017449) — another higher-priority session preempted you
+                    logger.warn("MediaMixer: audio session error - insufficient priority (higher-priority session active)")
+                    await handlePriorityError(error)
+                default:
+                    await handleUnhandledRuntimeError(error)
+                }
+            } else {
+                await handleUnhandledRuntimeError(error)
+            }
+            #else
+            await handleUnhandledRuntimeError(error)
+            #endif
         }
+    }
+    
+    /// Handles priority errors (device in use, e.g., during phone calls)
+    @available(tvOS 17.0, *)
+    private func handlePriorityError(_ error: AVError) async {
+        // Determine if error is audio or video related
+        var isAudioError = false
+        var isVideoError = false
+        
+        if let errorDevice = error.device {
+            if errorDevice.hasMediaType(.audio) {
+                isAudioError = true
+            } else if errorDevice.hasMediaType(.video) {
+                isVideoError = true
+            }
+        }
+        
+        // If device type can't be determined, check attached devices
+        // Audio is more likely to be unavailable during phone calls
+        if !isAudioError && !isVideoError {
+            #if os(iOS) || os(macOS) || os(tvOS)
+            if !audioIO.devices.isEmpty {
+                isAudioError = true
+                logger.warn("MediaMixer: assuming audio error since audio devices are attached")
+            }
+            #endif
+        }
+        
+        if isAudioError {
+            logger.warn("MediaMixer: audio device priority error - detaching audio and retrying with video only")
+            await detachAudioAndReattachVideo()
+        } else if isVideoError {
+            logger.warn("MediaMixer: video device priority error - camera in use. Will not retry until interruption ends.")
+            // Don't retry - wait for interruption to end
+        } else {
+            // Unknown device type - attempt recovery as fallback
+            logger.warn("MediaMixer: unknown device priority error - attempting recovery")
+            await detachAudioAndReattachVideo()
+        }
+    }
+    
+    /// Detaches all audio devices and re-attaches video devices to restore video capture
+    @available(tvOS 17.0, *)
+    private func detachAudioAndReattachVideo() async {
+        // Store video device information before detaching audio
+        var videoDevicesToReattach: [(track: UInt8, device: AVCaptureDevice?)] = []
+        for (track, videoDeviceUnit) in videoIO.devices {
+            videoDevicesToReattach.append((track: track, device: videoDeviceUnit.device))
+        }
+        
+        // Detach all audio devices
+        #if os(iOS) || os(macOS) || os(tvOS)
+        for (track, _) in audioIO.devices {
+            do {
+                logger.info("MediaMixer: detaching audio device for track \(track)")
+                try await attachAudio(nil, track: track)
+            } catch {
+                logger.warn("MediaMixer: failed to detach audio device for track \(track): \(error)")
+            }
+        }
+        #endif
+        
+        // Re-attach all video devices to restore the video capture pipeline
+        logger.info("MediaMixer: re-attaching video devices")
+        for (track, device) in videoDevicesToReattach {
+            guard let device = device else {
+                continue
+            }
+            do {
+                logger.info("MediaMixer: re-attaching video device for track \(track): \(device.localizedName)")
+                try await attachVideo(device, track: track)
+            } catch {
+                logger.warn("MediaMixer: failed to re-attach video device for track \(track): \(error)")
+            }
+        }
+        
+        // Restart the session if it should be running
+        if isRunning {
+            if !session.isRunning {
+                logger.info("MediaMixer: restarting session after detaching audio and re-attaching video")
+                session.startRunning()
+            } else {
+                logger.info("MediaMixer: session is already running, calling startRunningIfNeeded")
+                session.startRunningIfNeeded()
+            }
+        }
+    }
+    
+    /// Handles unhandled runtime errors with rate-limited retry logic
+    @available(tvOS 17.0, *)
+    private func handleUnhandledRuntimeError(_ error: AVError) async {
+        logger.warn("MediaMixer: unhandled runtime error: \(error)")
+        
+        // Rate limit retries to prevent infinite loops
+        let errorKey = "runtime_error_retry"
+        let now = Date()
+        let lastRetry = runtimeErrorLastRetryTime[errorKey] ?? Date.distantPast
+        let timeSinceLastRetry = now.timeIntervalSince(lastRetry)
+        
+        // Reset retry count if enough time has passed (5 seconds)
+        if timeSinceLastRetry > 5.0 {
+            runtimeErrorRetryCount[errorKey] = 0
+        }
+        
+        let retryCount = runtimeErrorRetryCount[errorKey] ?? 0
+        if retryCount >= 2 {
+            logger.warn("MediaMixer: max retry attempts reached for runtime error, stopping retries")
+            runtimeErrorRetryCount[errorKey] = 0 // Reset for next time
+            return
+        }
+        
+        // Only attempt recovery if we have devices attached and session should be running
+        let hasVideoDevices = !videoIO.devices.isEmpty
+        #if os(iOS) || os(macOS) || os(tvOS)
+        let hasAudioDevices = !audioIO.devices.isEmpty
+        #else
+        let hasAudioDevices = false
+        #endif
+        
+        guard isRunning && (hasVideoDevices || hasAudioDevices) else {
+            return
+        }
+        
+        // Check if app is in foreground (iOS/tvOS/visionOS)
+        #if os(iOS) || os(tvOS) || os(visionOS)
+        let isInForeground = await MainActor.run {
+            UIApplication.shared.applicationState == .active
+        }
+        guard isInForeground else {
+            logger.info("MediaMixer: app in background, skipping recovery attempt")
+            return
+        }
+        #endif
+        
+        runtimeErrorRetryCount[errorKey] = retryCount + 1
+        runtimeErrorLastRetryTime[errorKey] = now
+        logger.info("MediaMixer: attempting device re-attachment after runtime error, attempt \(retryCount + 1)")
+        
+        // Add a small delay before retrying to avoid immediate re-trigger
+        try? await Task.sleep(nanoseconds: 500_000_000) // 0.5 seconds
+        
+        // Attempt to re-attach devices
+        await detachAudioAndReattachVideo()
     }
 }
 
