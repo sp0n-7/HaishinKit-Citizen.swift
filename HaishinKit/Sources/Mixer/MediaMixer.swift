@@ -254,6 +254,35 @@ public final actor MediaMixer {
             videoIO.isTorchEnabled = true
         }
     }
+    
+    /// Configures the mixer to capture landscape video with custom dimensions from a portrait-held device.
+    /// This crops the center landscape region from portrait-captured video.
+    /// - Parameters:
+    ///   - enabled: Whether to enable landscape cropping mode
+    ///   - size: The desired output size (should be landscape aspect ratio)
+    ///   - track: The video track to configure (default: 0)
+    /// - Note: For best quality, ensure your capture session preset supports high resolution (e.g., .hd1920x1080 or higher)
+    public func setLandscapeCropping(enabled: Bool, size: CGSize, track: UInt8 = 0) {
+        Task { @ScreenActor in
+            if enabled {
+                // Set screen to landscape output
+                screen.size = size
+                
+                // Configure the main video track to fill the landscape area
+                // This will crop the center landscape portion from portrait video
+                screen.videoTrackScreenObject.track = track
+                screen.videoTrackScreenObject.size = size
+                screen.videoTrackScreenObject.videoGravity = .resizeAspectFill
+                screen.videoTrackScreenObject.horizontalAlignment = .center
+                screen.videoTrackScreenObject.verticalAlignment = .middle
+                screen.videoTrackScreenObject.layoutMargin = .zero
+            } else {
+                // Return to portrait mode
+                screen.size = CGSize(width: 720, height: 1280)
+                screen.videoTrackScreenObject.videoGravity = .resizeAspect
+            }
+        }
+    }
     #endif
 
     /// Appends a CMSampleBuffer.
