@@ -33,7 +33,7 @@ let package = Package(
     ],
     targets: [
         .binaryTarget(
-            name: "libsrt",
+            name: "libsrtCitizen",
             path: "SRTHaishinKit/Vendor/SRT/libsrt.xcframework"
         ),
         .target(
@@ -44,7 +44,7 @@ let package = Package(
         ),
         .target(
             name: "SRTHaishinKitCitizen",
-            dependencies: ["libsrt", "HaishinKitCitizen"],
+            dependencies: ["libsrtCitizen", "HaishinKitCitizen"],
             path: "SRTHaishinKit/Sources",
             swiftSettings: swiftSettings
         ),
