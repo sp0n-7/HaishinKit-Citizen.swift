@@ -16,11 +16,11 @@ let swiftSettings: [SwiftSetting] = [
 let package = Package(
     name: "HaishinKitCitizen",
     platforms: [
-        .iOS(.v13),
-        .tvOS(.v13),
+        .iOS(.v15),
+        .tvOS(.v15),
         .visionOS(.v1),
         .macOS(.v10_15),
-        .macCatalyst(.v14)
+        .macCatalyst(.v15)
     ],
     products: [
         .library(name: "HaishinKitCitizen", targets: ["HaishinKitCitizen"]),
