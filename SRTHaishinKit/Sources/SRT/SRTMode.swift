@@ -1,5 +1,5 @@
 import Foundation
-import libsrt
+import libsrtCitizen
 
 /// The type of SRTHaishinKit supports srt modes.
 public enum SRTMode: Sendable {

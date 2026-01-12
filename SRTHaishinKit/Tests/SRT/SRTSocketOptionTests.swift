@@ -1,7 +1,7 @@
 import Foundation
 import Testing
 
-import libsrt
+import libsrtCitizen
 @testable import SRTHaishinKit
 
 @Suite struct SRTSocketOptionsTests {

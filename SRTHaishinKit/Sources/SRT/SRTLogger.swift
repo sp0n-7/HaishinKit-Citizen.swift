@@ -1,5 +1,5 @@
 import Foundation
-import libsrt
+import libsrtCitizen
 
 public enum SRTLogLevel: Sendable {
     /// Highly detailed and very frequent messages.

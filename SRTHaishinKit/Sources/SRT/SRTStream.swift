@@ -2,7 +2,7 @@
 import Combine
 import Foundation
 import HaishinKitCitizen
-import libsrt
+import libsrtCitizen
 
 /// An actor that provides the interface to control a one-way channel over a SRTConnection.
 public actor SRTStream {

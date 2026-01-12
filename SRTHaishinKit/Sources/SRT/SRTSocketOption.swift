@@ -1,5 +1,5 @@
 import Foundation
-import libsrt
+import libsrtCitizen
 
 enum SRTSocketOption: String, Sendable {
     private static let boolStringLiterals: [String: Bool] = [

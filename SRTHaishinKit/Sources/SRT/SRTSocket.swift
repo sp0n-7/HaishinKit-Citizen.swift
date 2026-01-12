@@ -1,6 +1,6 @@
 import Foundation
 import HaishinKitCitizen
-import libsrt
+import libsrtCitizen
 import Logboard
 
 final actor SRTSocket {

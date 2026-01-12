@@ -1,4 +1,4 @@
-module libsrt {
+module libsrtCitizen {
     header "srt.h"
     export *
 }

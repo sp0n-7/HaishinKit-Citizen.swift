@@ -1,0 +1,4 @@
+module libsrtCitizen {
+  umbrella header "libsrt/srt.h"
+  export *
+}
