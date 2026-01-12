@@ -24,7 +24,6 @@ let package = Package(
     ],
     products: [
         .library(name: "HaishinKitCitizen", targets: ["HaishinKitCitizen"]),
-        .library(name: "SRTHaishinKitCitizen", targets: ["SRTHaishinKitCitizen"]),
         .library(name: "MoQTHaishinKitCitizen", targets: ["MoQTHaishinKitCitizen"])
     ],
     dependencies: [
@@ -32,20 +31,10 @@ let package = Package(
         .package(url: "https://github.com/shogo4405/Logboard.git", "2.6.0"..<"2.7.0")
     ],
     targets: [
-        .binaryTarget(
-            name: "libsrtCitizen",
-            path: "SRTHaishinKit/Vendor/SRT/libsrt.xcframework"
-        ),
         .target(
             name: "HaishinKitCitizen",
             dependencies: ["Logboard"],
             path: "HaishinKit/Sources",
-            swiftSettings: swiftSettings
-        ),
-        .target(
-            name: "SRTHaishinKitCitizen",
-            dependencies: ["libsrtCitizen", "HaishinKitCitizen"],
-            path: "SRTHaishinKit/Sources",
             swiftSettings: swiftSettings
         ),
         .target(
@@ -61,12 +50,6 @@ let package = Package(
             resources: [
                 .process("Asset")
             ],
-            swiftSettings: swiftSettings
-        ),
-        .testTarget(
-            name: "SRTHaishinKitTestsCitizen",
-            dependencies: ["SRTHaishinKitCitizen"],
-            path: "SRTHaishinKit/Tests",
             swiftSettings: swiftSettings
         )
     ],
