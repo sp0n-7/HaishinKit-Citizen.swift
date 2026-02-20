@@ -95,7 +95,15 @@ public final actor MediaMixer {
     }
     #endif
 
+    /// Whether landscape cropping mode is currently active.
+    public var isLandscapeCroppingActive: Bool {
+        isLandscapeCroppingEnabled
+    }
+
     public private(set) var isRunning = false
+    private var isLandscapeCroppingEnabled = false
+    private var preLandscapeCropScreenSize: CGSize?
+    private var preLandscapeCropVideoMixerMode: VideoMixerSettings.Mode?
     private var outputs: [any MediaMixerOutput] = []
     @MainActor
     private var cancellables: Set<AnyCancellable> = []
@@ -255,6 +263,64 @@ public final actor MediaMixer {
         }
     }
     #endif
+
+    /// Configures the mixer to capture landscape video from a portrait-held device.
+    /// This crops the center landscape region from portrait-captured video using the
+    /// offscreen rendering pipeline.
+    ///
+    /// - Parameters:
+    ///   - enabled: Whether to enable landscape cropping mode.
+    ///   - size: The desired output size (must be landscape, i.e. width > height).
+    ///   - track: The video track to configure (default: 0).
+    /// - Note: This forces offscreen rendering mode. For best quality, ensure your
+    ///   capture preset supports resolution higher than your target output size
+    ///   (e.g., .hd1920x1080 capture for 1280x720 output).
+    public func setLandscapeCropping(enabled: Bool, size: CGSize, track: UInt8 = 0) {
+        if enabled {
+            preLandscapeCropVideoMixerMode = videoMixerSettings.mode
+
+            if videoMixerSettings.mode != .offscreen {
+                var settings = videoMixerSettings
+                settings.mode = .offscreen
+                setVideoMixerSettings(settings)
+            }
+
+            isLandscapeCroppingEnabled = true
+
+            Task { @ScreenActor in
+                let previousSize = screen.size
+                screen.size = size
+                screen.videoTrackScreenObject.track = track
+                screen.videoTrackScreenObject.size = size
+                screen.videoTrackScreenObject.videoGravity = .resizeAspectFill
+                screen.videoTrackScreenObject.horizontalAlignment = .center
+                screen.videoTrackScreenObject.verticalAlignment = .middle
+                screen.videoTrackScreenObject.layoutMargin = .init(top: 0, left: 0, bottom: 0, right: 0)
+                await self.setPreLandscapeCropScreenSize(previousSize)
+            }
+        } else {
+            isLandscapeCroppingEnabled = false
+            let restoreSize = preLandscapeCropScreenSize ?? CGSize(width: 1280, height: 720)
+
+            if let previousMode = preLandscapeCropVideoMixerMode, previousMode != videoMixerSettings.mode {
+                var settings = videoMixerSettings
+                settings.mode = previousMode
+                setVideoMixerSettings(settings)
+            }
+
+            Task { @ScreenActor in
+                screen.size = restoreSize
+                screen.videoTrackScreenObject.videoGravity = .resizeAspect
+            }
+
+            preLandscapeCropScreenSize = nil
+            preLandscapeCropVideoMixerMode = nil
+        }
+    }
+
+    private func setPreLandscapeCropScreenSize(_ size: CGSize) {
+        preLandscapeCropScreenSize = size
+    }
 
     /// Appends a CMSampleBuffer.
     /// - Parameters:
