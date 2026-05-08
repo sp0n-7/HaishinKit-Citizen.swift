@@ -100,10 +100,6 @@ final actor RTMPSocket {
         }
     }
 
-    /// Sendable-friendly counterpart of `send(_ iterator:)` so callers don't have
-    /// to send a non-Sendable `AnyIterator` across actor isolation. Materialize
-    /// the chunks at the call site and hand the resulting `[Data]` (which is
-    /// Sendable) to the actor.
     func send(_ chunks: [Data]) {
         guard connected else {
             return

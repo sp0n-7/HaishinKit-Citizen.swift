@@ -404,11 +404,7 @@ public actor RTMPConnection: NetworkConnection {
         if logger.isEnabledFor(level: .trace) {
             logger.trace("<<", message)
         }
-        // Drain the iterator into a Sendable `[Data]` before handing it off to
-        // the RTMPSocket actor. The original `socket.send(_ iterator:)` overload
-        // takes `AnyIterator<Data>`, which isn't Sendable and trips the
-        // Xcode 26.4 strict-concurrency checker on `Task { await ... }`.
-        let chunks = Array(IteratorSequence(outputBuffer.putMessage(type, chunkStreamId: chunkStreamId.rawValue, message: message)))
+        let chunks = Array(outputBuffer.putMessage(type, chunkStreamId: chunkStreamId.rawValue, message: message))
         Task {
             await socket?.send(chunks)
         }
