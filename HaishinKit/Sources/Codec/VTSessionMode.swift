@@ -9,12 +9,28 @@ enum VTSessionMode {
         switch self {
         case .compression:
             var session: VTCompressionSession?
+            let encoderSpecification: CFDictionary?
+            #if targetEnvironment(simulator)
+            // The simulator has no hardware H.264 encoder; a nil spec makes VTCompressionSessionCreate
+            // select the (absent) hardware encoder and fail with -12908. Forcing enable/require = false
+            // at create time selects the software encoder instead so encoding can produce output.
+            if #available(iOS 17.4, tvOS 17.4, visionOS 1.1, macOS 10.9, *) {
+                encoderSpecification = [
+                    kVTVideoEncoderSpecification_EnableHardwareAcceleratedVideoEncoder: kCFBooleanFalse as Any,
+                    kVTVideoEncoderSpecification_RequireHardwareAcceleratedVideoEncoder: kCFBooleanFalse as Any
+                ] as CFDictionary
+            } else {
+                encoderSpecification = nil
+            }
+            #else
+            encoderSpecification = nil
+            #endif
             var status = VTCompressionSessionCreate(
                 allocator: kCFAllocatorDefault,
                 width: Int32(videoCodec.settings.videoSize.width),
                 height: Int32(videoCodec.settings.videoSize.height),
                 codecType: videoCodec.settings.format.codecType,
-                encoderSpecification: nil,
+                encoderSpecification: encoderSpecification,
                 imageBufferAttributes: videoCodec.makeImageBufferAttributes(.compression) as CFDictionary?,
                 compressedDataAllocator: nil,
                 outputCallback: nil,
